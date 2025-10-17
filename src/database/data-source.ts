@@ -2,6 +2,7 @@ import { DataSource, DataSourceOptions } from 'typeorm';
 import { config } from 'dotenv';
 import { UserBalance } from '../users/entities/user-balance.entity';
 import { Transaction } from '../transactions/entities/transaction.entity';
+import { FraudAlert } from '../frauds/entities/fraud-alert.entity';
 
 config({ path: '.env' });
 
@@ -12,7 +13,7 @@ export const dataSourceOptions: DataSourceOptions = {
   username: process.env.DB_USER ?? 'postgres',
   password: process.env.DB_PASSWORD ?? 'postgres',
   database: process.env.DB_NAME ?? 'wallet',
-  entities: [UserBalance, Transaction],
+  entities: [UserBalance, Transaction, FraudAlert],
   synchronize: false,
   logging: process.env.TYPEORM_LOGGING === 'true',
   migrations: ['dist/migrations/*.js'],

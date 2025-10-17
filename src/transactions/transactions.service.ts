@@ -4,7 +4,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Transaction, TransactionType } from './entities/transaction.entity';
 import { UserBalance } from '../users/entities/user-balance.entity';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
@@ -13,12 +13,21 @@ import {
   amountStringToCents,
 } from '../common/utils/money.util';
 import { TransactionProcessResult } from './dto/transaction-service-response.dto';
+import { FraudService } from '../frauds/frauds.service';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class TransactionsService {
   private readonly logger = new Logger(TransactionsService.name);
 
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    @InjectRepository(Transaction)
+    private readonly transactionRepository: Repository<Transaction>,
+    @InjectRepository(UserBalance)
+    private readonly balanceRepository: Repository<UserBalance>,
+    private readonly dataSource: DataSource,
+    private readonly fraudService: FraudService,
+  ) {}
 
   public async process(
     createTransactionDto: CreateTransactionDto,
@@ -83,7 +92,9 @@ export class TransactionsService {
 
         await queryRunner.commitTransaction();
 
-        return { transaction: tx, balanceCents: newBalance };
+        const flagged = await this.fraudService.checkAndFlagIfSuspicious(tx);
+
+        return { transaction: tx, balanceCents: newBalance, flagged };
       } catch (err) {
         await queryRunner.rollbackTransaction();
         if ((err as Error).message === 'insufficient_funds') throw err;
@@ -97,5 +108,27 @@ export class TransactionsService {
       if (e instanceof BadRequestException) throw e;
       throw new BadRequestException((e as Error).message);
     }
+  }
+
+  async getUserTransactions(
+    userId: string,
+    limit = 50,
+    before?: string,
+  ): Promise<Transaction[]> {
+    const qb = this.transactionRepository
+      .createQueryBuilder('t')
+      .where('t.userId = :userId', { userId })
+      .orderBy('t.createdAt', 'DESC')
+      .limit(Math.min(limit, 200));
+
+    if (before) {
+      qb.andWhere('t.createdAt < :before', { before });
+    }
+    return qb.getMany();
+  }
+
+  async getUserBalance(userId: string): Promise<number> {
+    const bal = await this.balanceRepository.findOne({ where: { userId } });
+    return bal?.balanceCents ?? 0;
   }
 }
