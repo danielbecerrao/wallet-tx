@@ -23,6 +23,7 @@
     "migration:revert": "typeorm-ts-node-esm migration:revert -d ./src/database/data-source.ts"
   },
   "dependencies": {
+    "@golevelup/ts-jest": "^0.7.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",

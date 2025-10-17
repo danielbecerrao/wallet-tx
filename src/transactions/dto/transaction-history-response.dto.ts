@@ -1,8 +1,8 @@
 export interface TransactionHistoryItemDto {
-  transaction_id: string;
-  amount_cents: number;
+  transactionId: string;
+  amountCents: number;
   type: string;
-  created_at: string;
+  createdAt: string;
 }
 
 export interface TransactionHistoryResponseDto {

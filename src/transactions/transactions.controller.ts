@@ -40,10 +40,10 @@ export class TransactionsController {
     );
 
     const transactions: TransactionHistoryItemDto[] = items.map((t) => ({
-      transaction_id: t.transactionId,
-      amount_cents: t.amountCents,
+      transactionId: t.transactionId,
+      amountCents: t.amountCents,
       type: t.type,
-      created_at: t.createdAt.toISOString(),
+      createdAt: t.createdAt.toISOString(),
     }));
 
     return { transactions };
@@ -52,6 +52,6 @@ export class TransactionsController {
   @Get('users/:userId/balance')
   async balance(@Param('userId') userId: string): Promise<BalanceResponseDto> {
     const cents = await this.service.getUserBalance(userId);
-    return { user_id: userId, balance_cents: cents };
+    return { userId: userId, balanceCents: cents };
   }
 }
