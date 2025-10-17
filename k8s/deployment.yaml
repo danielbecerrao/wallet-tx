@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wallet-tx-service
+  labels:
+    app: wallet-tx-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: wallet-tx-service
+  template:
+    metadata:
+      labels:
+        app: wallet-tx-service
+    spec:
+      containers:
+        - name: api
+          image: wallet-tx-service:1.0.0
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - secretRef:
+                name: wallet-env
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: pg-credentials
+                  key: host
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: pg-credentials
+                  key: user
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pg-credentials
+                  key: password
+            - name: DB_NAME
+              value: wallet
+            - name: DB_SSL
+              value: "false"
+            - name: FRAUD_HIGH_AMOUNT_CENTS
+              value: "10000"
+            - name: FRAUD_WINDOW_MIN
+              value: "10"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "300m"
+              memory: "256Mi"
